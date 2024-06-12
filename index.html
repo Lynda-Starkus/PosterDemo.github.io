@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <style>
+    body { margin: 0; padding: 0; }
+    #map { position: absolute; top: 45px; bottom: 0; width: 100%; }
+    p {font-family: Arial, Helvetica, sans-serif; margin-left: 3%; margin-right: 3%;}
+  </style>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-132447077-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-132447077-2');
+</script>
+
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta name="Description" 
+  content="NYC Online Bike Map with NYC Bike Lanes, Greenways, Openstreets, Citi Bike, Protected Bike Paths and More. Updated May 2022.">
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet" defer> 
+
+  <!-- <script src='https://api.mapbox.com/mapbox-gl-js/v1.8.1/mapbox-gl.js'></script> -->
+  <script src='mapbox-gl.js'></script> 
+  
+  <!-- <script src="modernizr.js"></script> -->
+<!-- Favicons: -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="images/icons/apple-touch-icon-144x144.png" />
+<link rel="apple-touch-icon-precomposed" sizes="152x152" href="images/icons/apple-touch-icon-152x152.png" />
+<link rel="icon" type="image/png" href="images/icons/favicon-32x32.png" sizes="32x32" />
+<link rel="icon" type="image/png" href="images/icons/favicon-16x16.png" sizes="16x16" />
+<meta name="application-name" content="PhD Day Demo"/>
+<meta name="msapplication-TileColor" content="#FFFFFF" />
+<meta name="msapplication-TileImage" content="images/icons/mstile-144x144.png" />
+
+
+<script async defer src="https://buttons.github.io/buttons.js"></script>
+</head>
+<title>Bike-Subway network</title>
+
+<body style="background-color: white">
+  
+  <style>
+  #menu {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: #ffffff; /* Flat white background */
+    padding: 10px 20px; /* Adjusted padding for a cleaner look */
+    font-size: larger;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box; /* Include padding in width */
+    z-index: 1000; /* Ensure it stays above other elements */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  }
+
+  #menu .radio-group {
+    display: flex;
+    align-items: center;
+  }
+
+  #menu .radio-group span {
+    display: flex;
+    align-items: center;
+    margin-right: 20px; /* Space between radio groups */
+  }
+
+  #menu input {
+    margin-right: 8px;
+    accent-color: #007bff; /* Modern blue accent color for radio buttons */
+  }
+
+  #menu label {
+    margin: 0;
+    font-weight: 500;
+    color: #333; /* Darker text color for better contrast */
+  }
+
+  #logo {
+    height: 40px; /* Adjust the height as needed */
+    transition: transform 0.3s ease; /* Smooth transition for hover effect */
+  }
+
+  #logo:hover {
+    transform: scale(1.1); /* Slightly enlarge the logo on hover */
+  }
+
+  #map {
+    width: 100%;
+    height: calc(100vh - 60px); /* Adjust height based on menu height */
+    position: absolute;
+    top: 60px; /* Push the map below the menu */
+  }
+    </style>
+
+  <link href='mapbox-gl.css' rel='stylesheet'/>
+
+  <script src="mapbox-gl-directions.js"></script>
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.0/mapbox-gl-directions.css" type="text/css">
+
+  <script>
+    (function() {
+    if(Modernizr.touchevents === false) {
+        var theScript = document.createElement('script');
+        theScript.type = 'text/javascript';
+        theScript.src = 'directions.js';
+     
+        var head = document.getElementsByTagName('head')[0];
+        body.appendChild(theScript);
+    }
+    })();
+    </script>
+
+  <link rel="stylesheet" href="directions.css" type="text/css" defer/>
+
+
+  <div id='map'></div>
+  <div id="menu">
+    <input id="standard" type="radio" name="rtoggle" value="standard" checked="checked">
+    <!-- See a list of Mapbox-hosted public styles at -->
+    <!-- https://docs.mapbox.com/api/maps/styles/#mapbox-styles -->
+    <label for="light-v11">2D View</label>
+
+    <input id="3D" type="radio" name="rtoggle" value="3D">
+    <label for="light-v10">3D View</label>
+    <img id="logo" src="./logos/logo_UGE.png" alt="Logo">
+  </div>
+  <script>
+
+//Check to see if browser is supported
+if (!mapboxgl.supported()) {
+alert('Your browser does not support Mapbox');
+} else {
+
+  mapboxgl.accessToken = 'pk.eyJ1IjoidG9kZGxtIiwiYSI6ImNrN3RuYzRjaDB2Zm4zZm5yOW42Ymt0cDQifQ.x1fVFY167sQIIxb3a2zMpQ';
+  var map = new mapboxgl.Map({
+  container: 'map',
+  style: 'mapbox://styles/toddlm/ck7tne8954uck1iplsky5igqx?optimize=true',
+  minZoom: '9',
+  attributionControl: false,
+  pitch: 0
+  });
+}
+
+// Add geolocate control to the map.
+map.addControl(
+new mapboxgl.GeolocateControl({
+positionOptions: {
+enableHighAccuracy: true
+},
+trackUserLocation: true
+})
+);
+map.addControl(new mapboxgl.AttributionControl({
+        compact: true,
+    }));
+
+//Add Fullscreen
+map.addControl(new mapboxgl.FullscreenControl());
+//Add Map Navigation
+map.addControl(new mapboxgl.NavigationControl());
+
+const layerList = document.getElementById('menu');
+const inputs = layerList.getElementsByTagName('input');
+var terrainLoaded = false;
+for (const input of inputs) {
+input.onclick = (layer) => {
+const layerId = layer.target.id;
+if (layerId == "3D") {
+  if(terrainLoaded == false){
+map.addSource('mapbox-dem', {
+'type': 'raster-dem',
+'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
+'tileSize': 512,
+'maxzoom': 14
+});
+map.addLayer({
+'id': 'sky',
+'type': 'sky',
+'paint': {
+'sky-type': 'atmosphere',
+'sky-atmosphere-sun': [0.0, 0.0],
+'sky-atmosphere-sun-intensity': 15
+}
+});
+terrainLoaded = true;
+  }
+// add the DEM source as a terrain layer with exaggerated height
+map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 8 });
+ 
+// add a sky layer that will show when the map is highly pitched
+
+map.setPitch(65);
+}
+else {
+  map.setStyle('mapbox://styles/mapbox/streets-v11');
+  map.on('style.load', () => {
+  map.setTerrain({ 
+    'source': 'mapbox-dem', 
+    'exaggeration': 0 
+  });
+  
+  map.setPitch(0);
+});
+}
+
+};
+}
+
+var directions = new MapboxDirections({
+  accessToken: mapboxgl.accessToken,
+  profile: 'mapbox/cycling',
+  profileSwitcher: false,
+  alternatives: true,
+  controls: {
+    profileSwitcher: false,
+    instructions: false
+  },
+  geocoder: {
+    country: "US",
+    proximity: [-73.987865,40.748297] 
+  }
+  
+});
+// add to your mapboxgl map
+
+map.addControl(directions, 'bottom-right');
+
+
+//westlimit=c; southlimit=40.356765; eastlimit=-73.582462; northlimit=40.977582
+
+// Oonee Markers:
+
+var popupbklyn = new mapboxgl.Popup({ offset: 25 }).setHTML(
+'<p><strong>Oonee Pod - Atlantic Terminal</strong></p> <picture> <source srcset="images/ooneepodimage.webp"  type="image/webp"> <source type="image/jp2" srcset="images/ooneepodimage.jp2"> <img src = "images/ooneepodimage.jpeg" height="40%" width="70%"></picture>  <p>Oonee is a secure public bike parking hub. Learn more about this Oonee Pod at <a target = "_blank" href ="https://www.ooneepod.com/atlantic-terminal">https://www.ooneepod.com/atlantic-terminal</a></p>  '
+);
+
+
+var popupjc = new mapboxgl.Popup({ offset: 25 }).setHTML(
+'<p><strong>Oonee Pod - Journal Square</strong></p> <picture> <source srcset="images/ooneepodimagejc.webp"  type="image/webp"> <source type="image/jp2" srcset="images/ooneepodimagejc.jp2"> <img src = "images/ooneepodimagejc.jpg" height="40%" width="70%"></picture>   <p>Oonee is a secure public bike parking hub. Learn more about this Oonee Pod at <a target = "_blank" href ="https://www.ooneepod.com/journal-square">https://www.ooneepod.com/journal-square</a></p> '
+);
+ 
+// create DOM element for the marker
+var ooneebklyn = document.createElement('div');
+ooneebklyn.id = 'marker';
+
+var ooneejc = document.createElement('div');
+ooneejc.id = 'marker';
+ 
+// create the marker
+
+new mapboxgl.Marker(ooneebklyn)
+.setLngLat([-73.975693, 40.683709])
+.setPopup(popupbklyn) // sets a popup on this marker
+.addTo(map);
+
+new mapboxgl.Marker(ooneejc)
+.setLngLat([-74.063588, 40.731881,])
+.setPopup(popupjc) // sets a popup on this marker
+.addTo(map);
+   
+map.on('zoom', function() {
+if (map.getZoom() > 11.25) {
+ooneebklyn.style.display = 'block';
+ooneejc.style.display = 'block';
+
+} else {
+ooneebklyn.style.display = 'none';
+ooneejc.style.display = 'none';
+
+}
+});
+
+
+map.on('load', function() {
+map.addSource('places', {
+'type': 'geojson',
+'data': {
+'type': 'FeatureCollection',
+'features': [
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Orchard Beach Boardwalk</strong></p> <p>Bicycles Permitted 6am – 10am only (Memorial Day to October 1) <a class="popup-link" href="https://www.nycgovparks.org/parks/pelham-bay-park/facilities/beaches" target="_blank">https://www.nycgovparks.org/parks/pelham-bay-park/facilities/beaches</a></p>',
+'icon': 'hazard'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.793106, 40.866276]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Governors Island</strong></p> <p>Bike-friendly destination featuring The Hills and seven miles of car-free biking with spectacular views of Lower Manhattan, Brooklyn, and New York Harbor. </p><p>Open to the public 7 days a week from May 1 – October 1. </p><p> For hours of operation, event information, and Manhattan, Brooklyn, and NYC Ferry schedules and fare information, visit <a class="popup-link" href="https://www.govisland.com" target="_blank">https://www.govisland.com</a></p>',
+'icon': 'info'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-74.022017, 40.68744]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Floyd Bennet Field</strong></p> <p>Floyd Bennett Field allows visitors to bike the historic runways and hike in the North Forty Natural Area. With a permit, visitors may camp in one of New York City’s only campgrounds, fish, and boat in Jamaica Bay.</p> <a class="popup-link" href="https://www.nps.gov/gate/planyourvisit/index.htm" target="_blank">https://www.nps.gov/gate/planyourvisit/index.htm</a>',
+'icon': 'info'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.889365, 40.593132]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Manhattan Beach Boardwalk</strong></p> <p>Bicycles Permitted 6am – 10am Memorial Day to October 1. Bicycles Permitted 6am - 9pm all other times <a class="popup-link" href="https://www.nycgovparks.org/parks/manhattan-beach-park" target="_blank">https://www.nycgovparks.org/parks/manhattan-beach-park</a></p>',
+'icon': 'hazard'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.944136, 40.57647]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Coney Island Boardwalk</strong></p> <p>Bicycles Permitted 6am – 10am Memorial Day to October 1. Bicycles Permitted 6am - 9pm all other times <a class="popup-link" href="https://www.nycgovparks.org/parks/coney-island-beach-and-boardwalk" target="_blank">https://www.nycgovparks.org/parks/coney-island-beach-and-boardwalk</a></p>',
+'icon': 'hazard'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.968759, 40.573951]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>High Bridge Hours</strong></p> <p>Summer: 7am-8pm </p> <p> Winter: 7am-7pm</p>',
+'icon': 'hazard'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.930183, 40.8423]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Silver Lake Park Auto-Free Hours</strong></p> <p>Friday 5pm to Monday 7am</p> <p>Holidays 5pm day before 7am day after.</p>',
+'icon': 'hazard'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-74.097462, 40.627894]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Steep</strong></p>',
+'icon': 'steep'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.911853, 40.896192]
+}
+},
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Steep</strong></p>',
+'icon': 'steep'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.90747, 40.902132]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Walk Bike</strong></p>',
+'icon': 'walkbike'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.922367, 40.877683]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Walk Bike</strong></p>',
+'icon': 'walkbike'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.911037, 40.873675]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Walk Bike</strong></p>',
+'icon': 'walkbike'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.9149, 40.862706]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Walk Bike</strong></p>',
+'icon': 'walkbike'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.927946, 40.846703]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Walk Bike</strong></p>',
+'icon': 'walkbike'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.820915, 40.869067]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Walk Bike</strong></p>',
+'icon': 'walkbike'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.81568, 40.862219]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Walk Bike</strong></p>',
+'icon': 'walkbike'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.933761, 40.828115]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Walk Bike</strong></p>',
+'icon': 'walkbike'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.936186, 40.828651]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Walk Bike</strong></p>',
+'icon': 'walkbike'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.933311, 40.819461]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Walk Bike</strong></p>',
+'icon': 'walkbike'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.933053, 40.814037]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Walk Bike</strong></p>',
+'icon': 'walkbike'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.927774, 40.800231]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Walk Bike</strong></p>',
+'icon': 'walkbike'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.919063, 40.798769]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Walk Bike</strong></p>',
+'icon': 'walkbike'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.926959, 40.779794]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Walk Bike</strong></p>',
+'icon': 'walkbike'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.945713, 40.763397]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Walk Bike</strong></p>',
+'icon': 'walkbike'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.945713, 40.763397]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Walk Bike</strong></p> <p>Use North Sidewalk </p>',
+'icon': 'walkbike'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.837008, 40.762569]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Walk Bike</strong></p><p>Use West Sidewalk</p>',
+'icon': 'walkbike'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.73723, 40.593165]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Walk Bike</strong></p><p>Use East Sidewalk</p>',
+'icon': 'walkbike'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.819885, 40.591796]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Walk Bike</strong></p><p>Use West Sidewalk</p>',
+'icon': 'walkbike'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.884945, 40.573283]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Stairs</strong></p>',
+'icon': 'stairs'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.931202, 40.866941]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Stairs</strong></p>',
+'icon': 'stairs'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.929384, 40.873813]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Stairs</strong></p>',
+'icon': 'stairs'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.929384, 40.873813]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Steep</strong></p>',
+'icon': 'steep'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.943738, 40.850818]
+}
+},
+
+{
+'type': 'Feature',
+'properties': {
+'description':
+'<p><strong>Empire State Trail</strong></p><p>The 750-mile Empire State Trail welcomes bicyclists and hikers to explore New York State’s extraordinary experiences, people, and places.</p><p>Learn more about the trail<a href="https://empiretrail.ny.gov"> here.</a></p>',
+'icon': 'estrail'
+},
+'geometry': {
+'type': 'Point',
+'coordinates': [-73.884779, 40.908040]
+}
+}
+
+
+
+
+
+
+]
+}
+});
+// Add a layer showing the places.
+map.addLayer({
+'id': 'places',
+'type': 'symbol',
+'source': 'places',
+'layout': {
+'icon-image': '{icon}', //{icon}
+'icon-allow-overlap': true,
+'icon-size': .32
+
+}
+});
+ 
+// When a click event occurs on a feature in the places layer, open a popup at the
+// location of the feature, with description HTML from its properties.
+map.on('click', 'places', function(e) {
+var coordinates = e.features[0].geometry.coordinates.slice();
+var description = e.features[0].properties.description;
+ 
+// Ensure that if the map is zoomed out such that multiple
+// copies of the feature are visible, the popup appears
+// over the copy being pointed to.
+while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+}
+ 
+new mapboxgl.Popup()
+.setLngLat(coordinates)
+.setHTML(description)
+.addTo(map);
+});
+ 
+// Change the cursor to a pointer when the mouse is over the places layer.
+map.on('mouseenter', 'places', function() {
+map.getCanvas().style.cursor = 'pointer';
+});
+ 
+// Change it back to a pointer when it leaves.
+map.on('mouseleave', 'places', function() {
+map.getCanvas().style.cursor = '';
+});
+});
+  </script>
+</body>
+</html>
